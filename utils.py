@@ -7,11 +7,15 @@ import random
 from dotenv import load_dotenv
 from file_io import load_channel_setting
 
+# 환경 변수 로드 및 DeepL API 설정
 load_dotenv()
 DEEPL_API_KEY = os.getenv("DEEPL_API_KEY")
 translator = deepl.Translator(DEEPL_API_KEY)
 
-# DeepL API
+# ------------------ 번역 관련 ------------------
+# DeepL API를 사용하여 텍스트를 번역
+# - text: 번역할 텍스트
+# - target_lang: 번역 대상 언어 (기본값: 'KO')
 async def translate_text_deepl(text, target_lang='KO'):
     try:
         result = translator.translate_text(text, target_lang=target_lang)
@@ -20,7 +24,9 @@ async def translate_text_deepl(text, target_lang='KO'):
         print(f"DeepL 오류: {e}")
         return text
 
+# ------------------ 중국어 메시지 확인 ------------------
 # 메시지가 중국어인지 확인
+# - message_content: 메시지 내용
 def is_message_chinese(message_content):
     chinese_numeric_regex = re.compile(r"[\u4E00-\u9FFF]")
     total_characters = len(message_content.replace(" ", ""))
@@ -29,13 +35,19 @@ def is_message_chinese(message_content):
     chinese_numeric_count = len(chinese_numeric_regex.findall(message_content))
     return (chinese_numeric_count / total_characters) >= 0.6
 
-# 공유한 게시물 출력용
+# ------------------ 텍스트를 인용 형식으로 변환 ------------------
+# 공유된 텍스트를 인용 형식으로 변환
+# - text: 변환할 텍스트
 def format_as_quote(text):
     # 텍스트를 줄바꿈(`\n`)을 기준으로 분리한 후, 각 줄 앞에 `>` 추가
     quoted_text = '\n'.join([f"> {line}" for line in text.splitlines()])
     return quoted_text
 
-# 타입별로 임베드 메시지 생성
+# ------------------ 임베드 메시지 생성 ------------------
+# 디스코드 임베드 메시지 생성
+# - post: 게시물 데이터
+# - host_mid: 게시물 작성자의 host_mid
+# - channel_id: 채널 ID
 async def create_embed(post, host_mid, channel_id):
     embed = discord.Embed()
 
@@ -90,7 +102,12 @@ async def create_embed(post, host_mid, channel_id):
 
     return embed
 
-# 메시지 전송 함수
+# ------------------ 메시지 전송 ------------------
+# 지정된 디스코드 채널에 메시지를 전송
+# - channel: 디스코드 채널 객체
+# - post: 게시물 데이터
+# - host_mid: 게시물 작성자의 host_mid
+# - channel_id: 채널 ID
 async def send_message(channel, post, host_mid, channel_id):
     embed = await create_embed(post, host_mid, channel_id)
     channel_setting = await load_channel_setting()    

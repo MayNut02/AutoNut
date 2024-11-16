@@ -9,18 +9,22 @@ from commands import setup_commands
 from file_io import load_channel_setting
 from utils import send_message, translate_text_deepl, is_message_chinese
 
+# 환경 변수 로드
 load_dotenv()
 
+# Discord 봇 토큰 및 UDS 파일 경로 설정
 TOKEN = os.getenv("DISCORD_TOKEN")
 UDS_PATH = "/tmp/monitor_signal.sock"
+
+# Discord 봇 설정
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
-
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
 
-# 이전에 소켓 파일이 존재하면 삭제
+# ------------------ UDS 파일 삭제 ------------------
+# 기존 UDS 파일이 있을 경우 삭제
 if os.path.exists(UDS_PATH):
     try:
         os.remove(UDS_PATH)
@@ -28,7 +32,8 @@ if os.path.exists(UDS_PATH):
     except Exception as e:
         print(f"[ERROR] 기존 소켓 파일 {UDS_PATH} 삭제 중 오류 발생: {e}")
 
-# 모니터링 함수
+# ------------------ UDS 모니터링 ------------------
+# UDS를 통해 외부 신호를 모니터링하고 처리
 async def monitor_signal():
     try:
         print("[DEBUG] monitor_signal() 시작 중...")
@@ -39,7 +44,9 @@ async def monitor_signal():
     except Exception as e:
         print(f"[ERROR] monitor_signal() 실행 중 오류 발생: {e}")
 
-# 신호 처리 함수
+# UDS를 통해 수신된 신호를 처리
+# - reader: 데이터를 읽는 스트림
+# - writer: 데이터를 쓰는 스트림
 async def handle_signal(reader, writer):
     try:
         data = await reader.read(100)
@@ -53,7 +60,10 @@ async def handle_signal(reader, writer):
         writer.close()
         await writer.wait_closed()
 
-# hsot_mid가 저장되어 있는 모든 channel 호출
+# ------------------ Discord 채널 메시지 처리 ------------------
+# host_mid가 등록되어 있는 디스코드 채널에 메시지를 전송
+# - host_mid: 대상 유저 ID
+# - post_id: 게시물 ID
 async def check_discord_channel(host_mid, post_id):
     await client.wait_until_ready()
     try:
@@ -90,29 +100,32 @@ async def check_discord_channel(host_mid, post_id):
     except Exception as e:
         print(f"[ERROR] {host_mid}의 채널 메시지 전송 중 오류 발생: {e}")
 
-# 봇 실행
+# ------------------ Discord 봇 이벤트 ------------------
+# 디스코드 봇이 준비되었을 때 실행됨
 @client.event
 async def on_ready():
     await tree.sync()
     print(f"{client.user}로 로그인했습니다.")
     await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="📺 YouTube @MayNut"))
 
-# 메시지 감지 이벤트
+# 메시지 이벤트 처리
+# - 채팅창에서 중국어 메시지 감지 시 자동으로 번역
 @client.event
 async def on_message(message):
     if message.author.bot:
-        return
+        return  # 봇 메시지는 무시
     
-    if is_message_chinese(message.content):
+    if is_message_chinese(message.content):  # 중국어 메시지 감지
         translated_text = await translate_text_deepl(message.content)
         response = f"**`중국어 자동 번역됨`**\n{translated_text}"
         await message.channel.send(response)
 
+# ------------------ 봇 실행 ------------------
+# Discord 봇을 실행
 def run_bot():
     async def start_bot():
-        asyncio.create_task(monitor_signal())  # 백그라운드 태스크
-        setup_commands(tree)  # 명령어 등록
-        await client.start(TOKEN)
+        asyncio.create_task(monitor_signal())   # UDS 모니터링 시작
+        setup_commands(tree)        # 명령어 등록
+        await client.start(TOKEN)   # Discord 봇 시작
 
-    # 이벤트 루프에서 실행
-    asyncio.run(start_bot())
+    asyncio.run(start_bot())  # 비동기 이벤트 루프 실행

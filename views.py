@@ -3,12 +3,14 @@ from file_io import load_channel_setting, save_channel_setting, get_author_name
 from file_io import load_watch_list, save_watch_list, create_host_mid_file
 from discord.ui import Button, View, Modal, TextInput, Select
 
-# 번역 설정 버튼
+# ------------------ 번역 설정 버튼 ------------------
+# 번역 설정을 활성화/비활성화할 수 있는 버튼 View
 class ViewSetTranslationButton(discord.ui.View):
     def __init__(self, channel_setting, channel_id):
         super().__init__()
         self.update_button_label(channel_setting, channel_id)
 
+    # 번역 설정 상태에 따라 버튼의 라벨 및 스타일 업데이트
     def update_button_label(self, channel_setting, channel_id):
         if channel_setting[channel_id]["translation"]:
             self.children[1].label = "번역 비활성화"
@@ -19,7 +21,7 @@ class ViewSetTranslationButton(discord.ui.View):
             self.children[1].emoji = "✅"
             self.children[1].style = discord.ButtonStyle.green
 
-    # 돌아가기 버튼
+    # 알림 설정 화면으로 돌아가는 버튼
     @discord.ui.button(emoji="⬅️", label="돌아가기", style=discord.ButtonStyle.grey)
     async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         # set_bili_notify에서 처음 보낸 ViewBiliNotify로 돌아가도록 설정
@@ -46,6 +48,7 @@ class ViewSetTranslationButton(discord.ui.View):
         )
         await interaction.response.edit_message(embed=original_embed, view=ViewBiliNotify(host_mid))
 
+    # 번역 설정 버튼 - 활성화/비활성화 토글
     @discord.ui.button(emoji="✅", label="번역 활성화", style=discord.ButtonStyle.green, row=0)
     async def set_translation_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         channel_setting = await load_channel_setting()
@@ -69,12 +72,13 @@ class ViewSetTranslationButton(discord.ui.View):
             )
         await interaction.response.edit_message(embed=new_embed, view=ViewBackButton())   
 
-# 삭제 확인 버튼
+# ------------------ 계정 삭제 버튼 ------------------
+# 계정 삭제 확인을 위한 버튼 View
 class ViewRemoveAccountButton(discord.ui.View):
     def __init__(self):
         super().__init__()
 
-    # 돌아가기 버튼
+    # 알림 설정 화면으로 돌아가는 버튼
     @discord.ui.button(emoji="⬅️", label="돌아가기", style=discord.ButtonStyle.grey)
     async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         # set_bili_notify에서 처음 보낸 ViewBiliNotify로 돌아가도록 설정
@@ -101,7 +105,7 @@ class ViewRemoveAccountButton(discord.ui.View):
         )
         await interaction.response.edit_message(embed=original_embed, view=ViewBiliNotify(host_mid))
 
-    # 삭제 진행
+    # 계정을 삭제하는 버튼
     @discord.ui.button(emoji="⛔", label="삭제", style=discord.ButtonStyle.red)
     async def remove_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         channel_id = str(interaction.channel_id)
@@ -130,7 +134,9 @@ class ViewRemoveAccountButton(discord.ui.View):
             )
         await interaction.response.edit_message(embed=new_embed, view=ViewBackButton())
 
-# 멘션 설정 버튼
+# ------------------ 멘션 설정 버튼 ------------------
+# 멘션 설정을 관리할 수 있는 버튼 View.
+# - 멘션 활성화, 비활성화, 역할 수정 가능
 class ViewSetMentionButton(discord.ui.View):
     def __init__(self, channel_setting, channel_id):
         super().__init__()
@@ -144,7 +150,7 @@ class ViewSetMentionButton(discord.ui.View):
             self.children[1].label = "멘션 활성화"
             self.children[1].emoji = "✅"
 
-    # 돌아가기 버튼
+    # 알림 설정 화면으로 돌아가는 버튼
     @discord.ui.button(emoji="⬅️", label="돌아가기", style=discord.ButtonStyle.grey)
     async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         # set_bili_notify에서 처음 보낸 ViewBiliNotify로 돌아가도록 설정
@@ -171,19 +177,22 @@ class ViewSetMentionButton(discord.ui.View):
         )
         await interaction.response.edit_message(embed=original_embed, view=ViewBiliNotify(host_mid))
 
+    # 멘션 활성화 및 역할 추가 버튼
     @discord.ui.button(emoji="✅", label="멘션 활성화", style=discord.ButtonStyle.green, row=0)
     async def add_mention_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.add_mention(interaction)     
 
+    # 멘션 비활성화 버튼
     @discord.ui.button(emoji="⛔", label="멘션 비활성화", style=discord.ButtonStyle.red, row=0)
     async def disable_mention_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.disable_mention(interaction)
 
+    # 멘션을 추가할 역할을 선택할 드롭다운 메뉴 생성
     async def add_mention(self, interaction: discord.Interaction):
-        # 서버의 모든 역할을 가져옴
+        # 서버의 모든 역할 가져오기
         roles = interaction.guild.roles[:]
 
-        # 드롭다운 메뉴 옵션 생성
+        # 역할 선택 드롭다운 생성
         options = [
             discord.SelectOption(label=role.name, value=str(role.id)) for role in roles
         ]
@@ -191,7 +200,7 @@ class ViewSetMentionButton(discord.ui.View):
         # 드롭다운 메뉴 생성
         select = Select(placeholder="역할을 선택하세요", options=options)
 
-        # 드롭다운 메뉴의 선택 이벤트 처리
+        # 드롭다운 메뉴 선택 이벤트 처리
         async def select_callback(interaction):
             channel_id = str(interaction.channel_id)
             selected_role_id = int(select.values[0])
@@ -230,6 +239,7 @@ class ViewSetMentionButton(discord.ui.View):
         )
         await interaction.response.edit_message(embed=new_embed, view=view)
 
+    # 현재 멘션 설정을 비활성화
     async def disable_mention(self, interaction: discord.Interaction):
         channel_setting = await load_channel_setting()
         channel_id = str(interaction.channel_id)
@@ -250,12 +260,15 @@ class ViewSetMentionButton(discord.ui.View):
             )
         await interaction.response.edit_message(embed=new_embed, view=ViewBackButton())   
 
-# 처음으로 돌아가기 버튼
+# ------------------ 처음으로 돌아가기 버튼 ------------------
+# 처음으로 돌아가기 버튼 View
+# - 이전 화면으로 돌아가도록 설정
 class ViewBackButton(discord.ui.View):
     def __init__(self):
         super().__init__()
 
-    # 돌아가기 버튼
+    # '돌아가기' 버튼 클릭 시 호출되는 이벤트 핸들러
+    # - 알림 설정 화면으로 돌아갑니다
     @discord.ui.button(emoji="⬅️", label="돌아가기", style=discord.ButtonStyle.grey)
     async def back_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         # set_bili_notify에서 처음 보낸 ViewBiliNotify로 돌아가도록 설정
@@ -282,15 +295,22 @@ class ViewBackButton(discord.ui.View):
         )
         await interaction.response.edit_message(embed=original_embed, view=ViewBiliNotify(host_mid))
         
-# 계정 등록/수정 입력받는 모달창
+# ------------------ 계정 등록/수정 입력 모달창 ------------------
+# 계정 등록 또는 수정을 위한 UID 입력 모달창
 class AddAccountModal(Modal, title='비리비리 UID 입력'):
     host_mid = TextInput(label='bilibili UID', placeholder='알림을 받을 계정의 UID를 입력해 주세요.')
 
+    # 모달창 초기화
+    # - callback: 입력 값 처리 콜백 함수
+    # - options: 등록(1) 또는 수정(0) 옵션
     def __init__(self, callback, options):
         super().__init__()
         self.callback = callback
         self.options = options
 
+    # 모달창 제출 시 호출되는 이벤트 핸들러
+    # - UID가 유효하지 않으면 오류 메시지를 표시
+    # - 유효한 경우 콜백 함수 호출
     async def on_submit(self, interaction: discord.Interaction):
         # 숫자가 아닌 값이 입력된 경우
         if not self.host_mid.value.isdigit():
@@ -300,12 +320,14 @@ class AddAccountModal(Modal, title='비리비리 UID 입력'):
                 color=discord.Color.blue()
             )
             await interaction.response.edit_message(embed=new_embed, view=ViewBackButton())        
-            return  # callback을 호출하지 않고 종료
+            return  # 콜백을 호출하지 않고 종료
 
-        # 숫자인 경우에만 callback을 호출
+        # UID가 유효한 경우 콜백 호출
         await self.callback(interaction, self.host_mid.value, self.options)
 
-# /알림관리 명령어 버튼 구성 View
+# ------------------ /알림관리 명령어 버튼 구성 View ------------------
+# /알림관리 명령어를 위한 버튼 View
+# - 계정 등록/수정, 삭제, 멘션 설정, 번역 설정 등을 관리
 class ViewBiliNotify(discord.ui.View):
     def __init__(self, host_mid):
         super().__init__()
@@ -319,6 +341,8 @@ class ViewBiliNotify(discord.ui.View):
             self.children[0].label = "계정 등록"
             self.children[0].emoji = "✅"
 
+    # 계정 등록/수정 버튼 클릭 시 실행
+    # - 현재 계정 정보가 있으면 수정, 없으면 등록
     @discord.ui.button(emoji="✅", label="계정 등록", style=discord.ButtonStyle.green, row=0)
     async def add_account_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         channel_id = str(interaction.channel_id)
@@ -330,34 +354,40 @@ class ViewBiliNotify(discord.ui.View):
             modal = AddAccountModal(self.change_account, 1) #등록
         await interaction.response.send_modal(modal)
 
+    # 계정 삭제 버튼 클릭 시 실행
     @discord.ui.button(emoji="⛔", label="계정 삭제", style=discord.ButtonStyle.red, row=0)
     async def remove_account_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.remove_account(interaction)
 
+    # 멘션 설정 버튼 클릭 시 실행
     @discord.ui.button(emoji="🔔", label="멘션 설정", style=discord.ButtonStyle.blurple, row=0)
     async def set_mention_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.set_mention(interaction)
 
+    # 번역 설정 버튼 클릭 시 실행
     @discord.ui.button(emoji="🌐", label=" 번역 설정", style=discord.ButtonStyle.blurple, row=0)
     async def set_translate_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.set_translation(interaction)
 
+    # 계정 등록 또는 수정을 처리
+    # - 새로운 계정 UID를 저장
     async def change_account(self, interaction: discord.Interaction, new_host_mid: str, options: int):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
         old_host_mid = channel_setting[channel_id]["host_mid"]
 
-        # watch_list.json에 new_host_mid가 없으면 추가
+        # watch_list.json에 새로운 UID 추가
         watch_list = await load_watch_list()
         if new_host_mid not in watch_list:
             watch_list.append(new_host_mid)
             await save_watch_list(watch_list)
             await create_host_mid_file(new_host_mid)
 
-        # channel_setting 파일에 채널과 new_host_mid 매핑 저장
+        # 채널 설정에 새로운 UID 저장
         channel_setting[channel_id]["host_mid"] = new_host_mid
         await save_channel_setting(channel_setting)
 
+        # 등록/수정에 따라 메시지 다르게 생성
         if options: #등록
             new_author_name = await get_author_name(new_host_mid)
             new_embed = discord.Embed(
@@ -375,6 +405,7 @@ class ViewBiliNotify(discord.ui.View):
             )
         await interaction.response.edit_message(embed=new_embed, view=ViewBackButton())        
 
+    # 계정 삭제를 처리
     async def remove_account(self, interaction: discord.Interaction):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
@@ -402,6 +433,7 @@ class ViewBiliNotify(discord.ui.View):
             )
             await interaction.response.edit_message(embed=new_embed, view=ViewBackButton())
 
+    # 멘션 설정 화면으로 이동
     async def set_mention(self, interaction: discord.Interaction):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
@@ -417,6 +449,7 @@ class ViewBiliNotify(discord.ui.View):
         )
         await interaction.response.edit_message(embed=new_embed, view=ViewSetMentionButton(channel_setting, channel_id))   
 
+    # 번역 설정 화면으로 이동
     async def set_translation(self, interaction: discord.Interaction):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
@@ -432,8 +465,12 @@ class ViewBiliNotify(discord.ui.View):
         )
         await interaction.response.edit_message(embed=new_embed, view=ViewSetTranslationButton(channel_setting, channel_id))   
 
-# 사전예약 순위 페이지 출력
+# ------------------ 사전예약 순위 페이지 출력 View ------------------
+# 비리비리 사전예약 게임 순위를 페이지 형식으로 출력하는 View
 class BiliPreRankView(discord.ui.View):
+    # 초기화 메서드
+    # - pre_rank: 사전예약 게임 데이터 리스트
+    # - embeds_per_page: 한 페이지에 표시할 게임 Embed 개수 (기본값: 5)
     def __init__(self, pre_rank, embeds_per_page=5):
         super().__init__()
         self.pre_rank = pre_rank
@@ -441,6 +478,7 @@ class BiliPreRankView(discord.ui.View):
         self.embeds_per_page = embeds_per_page
         self.update_buttons()
 
+    # 페이지 상태에 따라 이전/다음 버튼을 동적으로 업데이트
     def update_buttons(self):
         self.clear_items()
         if self.current_page > 0:
@@ -448,6 +486,8 @@ class BiliPreRankView(discord.ui.View):
         if (self.current_page + 1) * self.embeds_per_page < len(self.pre_rank):
             self.add_item(NextPageButton())
 
+    # 현재 페이지의 데이터를 기반으로 Embed 리스트 생성
+    # - 사전예약 게임 정보를 페이지 단위로 나눠 Embed 형태로 반환
     def generate_embeds(self):
         embeds = []
         start = self.current_page * self.embeds_per_page
@@ -455,7 +495,8 @@ class BiliPreRankView(discord.ui.View):
         n = start + 1
         for game in self.pre_rank[start:end]:
             game_tag = " ".join([f"`#{tag}`" for tag in game.get('tag_names', [])])
-            description = game.get('game_desc', '').replace('\n', ' ') + "....." + f"\n\n`#{game.get('category', '')}` {game_tag}"
+            #description = game.get('game_desc', '').replace('\n', ' ') + "....." + f"\n\n`#{game.get('category', '')}` {game_tag}"
+            description = f"`#{game.get('category', '')}` {game_tag}"
             embed = discord.Embed(
                 title=game.get('title', ''),
                 url=f"{game.get('game_detail_link', '')}",
@@ -474,6 +515,7 @@ class BiliPreRankView(discord.ui.View):
             n += 1
         return embeds
 
+# ------------------ 사전예약 페이지 네비게이션 버튼 ------------------
 # 사전예약 순위 이전 페이지 버튼
 class PreviousPageButton(discord.ui.Button):
     def __init__(self):
