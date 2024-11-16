@@ -35,4 +35,4 @@ AutoNut은 bilibili 새로운 게시물 알림 기능을 포함한 Discord 봇�
 - `/카운트다운` - 스트리노바 출시일 카운트다운 명령어.
 
 ## 라이선스
-[MIT license](https://github.com/MayNut0/AutoNut/blob/main/LICENSE)
+[MIT license](https://github.com/MayNut02/AutoNut/blob/main/LICENSE)
