@@ -1,7 +1,7 @@
 # AutoNut - for bilibili Notification
 AutoNut은 bilibili 새로운 게시물 알림 기능을 포함한 Discord 봇입니다. 사용자가 지정한 bilibili 계정의 활동을 모니터링하며 최신 동영상, 게시물 등의 업데이트 정보를 Discord 채널에 실시간으로 전송합니다.
 
-## 서버에 초대하기
+## 봇 초대하기
 **[서버에 초대하기](https://discord.com/oauth2/authorize?client_id=1305039063081816074&permissions=415001701376&integration_type=0&scope=bot+applications.commands)**
 
 ## 주요 기능
@@ -31,8 +31,15 @@ AutoNut은 bilibili 새로운 게시물 알림 기능을 포함한 Discord 봇�
   - 계정 등록/수정 - 알림을 받기 원하는 bilibili UID를 등록하여 새 콘텐츠 알림을 받을 수 있습니다.
   - 멘션 설정 - 알림 메시지에 포함될 역할을 선택하거나 비활성화할 수 있습니다.
   - 번역 설정 - 콘텐츠 내용 번역 여부를 선택할 수 있습니다.
+  
 - `/사전예약순위` - bilibili 사전예약 게임 순위를 확인합니다.
+  
 - `/카운트다운` - 스트리노바 출시일 카운트다운 명령어.
+
+## 패키지 ##
+```
+pip install discord.py aiofiles aiohttp python-dotenv deepl
+```
 
 ## 라이선스
 [MIT license](https://github.com/MayNut02/AutoNut/blob/main/LICENSE)
