@@ -60,12 +60,7 @@ class AutoTranslate(commands.Cog):
                 "translation": False,
                 "auto_translate": False
             }
-
-        # auto_translate 값을 토글
-        self.channel_settings[channel_id]["auto_translate"] = not self.channel_settings[channel_id]["auto_translate"]
-
-        # 변경 사항 파일에 저장
-        await self.save_auto_trans_settings()
+            await self.save_auto_trans_settings()
 
         # Embed 생성
         embed = self.create_autotrans_setting_embed(
