@@ -25,7 +25,6 @@ UDS_PATH = "/tmp/monitor_signal.sock"  # UDS 경로
 os.makedirs(DATA_DIR, exist_ok=True)   # 데이터 디렉토리 생성
 file_lock = asyncio.Lock()             # 파일 동기화를 위한 Lock
 
-# ------------------ watch_list.json 로드 ------------------
 # watch_list.json에서 host_mid 목록을 로드
 async def load_watch_list():
     try:
@@ -35,9 +34,7 @@ async def load_watch_list():
     except FileNotFoundError:
         return []
 
-# ------------------ 게시물 데이터 추출 ---------------------
 # 게시물 데이터를 타입별로 추출하여 반환
-# - post: 게시물 데이터
 def extract_data_by_type(post):
     post_type = post.get("type", "UNKNOWN")
     base_data = {
@@ -110,9 +107,7 @@ def extract_data_by_type(post):
     else:
         return base_data
 
-# ------------------ API 데이터 가져오기 ------------------
 # 특정 host_mid에 대한 데이터를 API로부터 호출
-# - host_mid: 대상 유저의 ID
 async def fetch_data(host_mid):
     url = URL_TEMPLATE.format(host_mid)
     timeout = aiohttp.ClientTimeout(total=10)  # 전체 요청 타임아웃 10초 설정
@@ -123,21 +118,16 @@ async def fetch_data(host_mid):
                 items = data.get("data", {}).get("items", [])[4::-1]
                 return [extract_data_by_type(item) for item in items]
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            print(f"API 요청 오류: {e} - host_mid {host_mid} 5분 후 재시도")
+            print(f"[ERROR] API 요청 오류: {e} - host_mid {host_mid} 5분 후 재시도")
             await asyncio.sleep(300)           # 오류 발생 시 5분 대기
             return await fetch_data(host_mid)  # 이후 재귀 호출로 재시도
 
-# ------------------ 데이터 저장 ------------------
 # 데이터를 JSON 파일로 저장
-# - file_path: 저장 경로
-# - data: 저장할 데이터
 async def save_json(file_path, data):
     async with aiofiles.open(file_path, 'w', encoding='utf-8') as file:
         await file.write(json.dumps(data, indent=4, ensure_ascii=False))
 
-# ------------------ 새 게시물 확인 ------------------
 # 특정 host_mid의 새로운 게시물을 확인하고 저장
-# - host_mid: 대상 유저의 ID
 async def check_new_posts(host_mid):
     file_path = os.path.join(DATA_DIR, f"{host_mid}.json")
     try:
@@ -163,12 +153,9 @@ async def check_new_posts(host_mid):
                 await send_signal_to_bot(host_mid, post_id)
 
     except Exception as e:
-        print(f"{host_mid} 데이터 처리 오류: {e}")
+        print(f"[ERROR] {host_mid} 데이터 처리 오류: {e}")
 
-# ------------------ UDS 신호 전송 ------------------
 # UDS를 통해 Discord 봇에 업데이트 신호를 전송
-# - host_mid: 유저 ID
-# - post_id: 게시물 ID
 async def send_signal_to_bot(host_mid, post_id):
     try:
         if os.path.exists(UDS_PATH):
@@ -183,11 +170,9 @@ async def send_signal_to_bot(host_mid, post_id):
         else:
             print("[ERROR] UDS_PATH가 존재하지 않습니다.")
     except Exception as e:
-        print(f"UDS 통신 오류: {e}")
+        print(f"[ERROR] UDS 통신 오류: {e}")
 
-# ------------------ 사전예약 순위 데이터 가져오기 ------------------
 # 사전예약 순위 데이터를 API에서 가져와 JSON 파일로 저장
-# - 각 페이지에서 순위 데이터를 가져와 병합.
 async def pre_rank_data():
     new_pre_rank_data = []
     for i in range(1, 4):
@@ -200,7 +185,7 @@ async def pre_rank_data():
 
                     # "code" 값이 0이 아닌 경우 처리
                     if data.get("code") != 0:
-                        print("SESSDATA 만료되었습니다.")
+                        print("[ERROR] COOKIE - SESSDATA가 만료되었습니다.")
                         return  
 
                     base_data = data.get("data", {}).get("order_list", [])[:]
@@ -218,14 +203,13 @@ async def pre_rank_data():
                         new_pre_rank_data.append(items)
 
             except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-                print(f"URL_PRE_RANK_API 요청 오류: {e} - 10분 후 재시도")
+                print(f"[ERROR] URL_PRE_RANK_API 요청 오류: {e} - 10분 후 재시도")
                 await asyncio.sleep(600)      # 오류 발생 시 10분 대기
                 return await pre_rank_data()  # 이후 재귀 호출로 재시도
             
     async with aiofiles.open(PRE_RANK_FILE, 'w', encoding='utf-8') as file:
         await file.write(json.dumps(new_pre_rank_data, indent=4, ensure_ascii=False))
 
-# ------------------ 주기적 작업 ------------------
 # 주기적으로 새로운 게시물을 확인
 async def new_post():
     while True:
@@ -235,7 +219,7 @@ async def new_post():
             tasks = [check_new_posts(host_mid) for host_mid in host_mids]
             await asyncio.gather(*tasks)
         except Exception as e:
-            print(f"new_post Error: {e}")
+            print(f"[ERROR] new_post Error: {e}")
         await asyncio.sleep(60)  # 60초마다 실행
 
 # 1시간마다 사전예약 순위를 업데이트
@@ -244,12 +228,12 @@ async def pre_reservation_rank():
         try:
             await pre_rank_data()
         except Exception as e:
-            print(f"pre_reservation_rank Error: {e}")
+            print(f"[ERROR] pre_reservation_rank Error: {e}")
         await asyncio.sleep(3600)   # 1시간
 
 # 메인 실행 함수
 async def main():
-    print("프로그램 시작")
+    print("[DEBUG] 프로그램 시작")
     await asyncio.gather(new_post(), pre_reservation_rank())
 
 if __name__ == "__main__":
