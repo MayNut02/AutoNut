@@ -26,7 +26,7 @@ async def handle_back_button(interaction, view_class):
     original_embed = create_autotrans_setting_embed(
         interaction.guild, interaction.channel, channel_setting
     )
-    await interaction.response.edit_message(embed=original_embed, view=view_class(channel_setting))
+    await interaction.response.edit_message(embed=original_embed, view=view_class(channel_setting, interaction.channel))
 
 # 돌아가기 버튼 View
 class ViewBackButton(discord.ui.View):
