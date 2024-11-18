@@ -21,10 +21,10 @@ class AutoNut(commands.AutoShardedBot):
         self.session = aiohttp.ClientSession()
 
         # 명령어 확장 로드
-        await self.load_extension("commands.bili_notify_set")
-        await self.load_extension("commands.bili_pre_rank")
-        await self.load_extension("commands.countdown")
-        await self.load_extension("commands.auto_trans")
+        await self.load_extension("cogs.bili_notify_set")
+        await self.load_extension("cogs.bili_pre_rank")
+        await self.load_extension("cogs.countdown")
+        await self.load_extension("cogs.auto_trans")
 
         # 명령어 동기화
         await self.tree.sync()

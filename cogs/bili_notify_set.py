@@ -509,12 +509,11 @@ class BiliNotifySetting(commands.Cog):
             await interaction.response.send_message("⚠️ 현재 채널에 메시지 전송 권한이 없습니다.", ephemeral=True)
             return
 
+        # 채널 설정에 현재 채널 ID가 없는 경우 기본값 추가
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
-
-        # 채널 설정에 현재 채널 ID가 없는 경우 기본값 추가
         if channel_id not in channel_setting:
-            channel_setting[channel_id] = {"host_mid": "", "mention": "", "translation": False}
+            channel_setting[channel_id] = {"host_mid": "", "mention": "", "translation": False, "auto_translate": False}
             await save_channel_setting(channel_setting)
 
         # 채널 설정 정보 가져오기
