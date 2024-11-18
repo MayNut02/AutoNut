@@ -513,16 +513,12 @@ class BiliNotifySetting(commands.Cog):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
         if channel_id not in channel_setting:
-            channel_setting[channel_id] = {"host_mid": "", "mention": "", "translation": False, "auto_translate": False}
-            await save_channel_setting(channel_setting)
-        if "host_mid" not in self.channel_settings[channel_id]:
-            self.channel_settings[channel_id]["host_mid"] = ""
-            await save_channel_setting(channel_setting)
-        if "mention" not in self.channel_settings[channel_id]:
-            self.channel_settings[channel_id]["mention"] = ""
-            await save_channel_setting(channel_setting)
-        if "translation" not in self.channel_settings[channel_id]:
-            self.channel_settings[channel_id]["translation"] = False
+            channel_setting[channel_id] = {
+                "host_mid": "",
+                "mention": "",
+                "translation": False,
+                "auto_translate": False
+            }
             await save_channel_setting(channel_setting)
 
         # 채널 설정 정보 가져오기

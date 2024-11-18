@@ -73,7 +73,7 @@ class AutoTranslate(commands.Cog):
         )
         await interaction.response.send_message(
             embed=embed,
-            view=self.ViewAutoTransSetting(self.channel_settings, interaction.channel),
+            view=self.ViewAutoTransSetting(self, self.channel_settings, interaction.channel),
             ephemeral=True
         )
 
@@ -105,7 +105,7 @@ class AutoTranslate(commands.Cog):
             )
             await interaction.response.edit_message(
                 embed=embed,
-                view=self.parent.ViewAutoTransSetting(self.parent.channel_settings, interaction.channel)
+                view=self.parent.ViewAutoTransSetting(self.parent, self.parent.channel_settings, interaction.channel)
             )
 
     class ViewAutoTransSetting(discord.ui.View):
@@ -114,17 +114,20 @@ class AutoTranslate(commands.Cog):
             self.parent = parent
             self.channel = channel  # 채널 정보 추가
             self.channel_setting = channel_setting
-            self.update_button_label()
+            self.toggle_button = self.create_toggle_button()
+            self.add_item(self.toggle_button)
 
-        def update_button_label(self):
-            # 채널 ID가 포함된 설정 확인
+        def create_toggle_button(self):
             channel_id = str(self.channel.id)
-            if self.channel_setting.get(channel_id, {}).get('auto_translate', False):
-                self.children[0].label = "끄기"
-                self.children[0].emoji = "⛔"
-            else:
-                self.children[0].label = "켜기"
-                self.children[0].emoji = "✅"
+            auto_translate = self.channel_setting.get(channel_id, {}).get('auto_translate', False)
+            label = "끄기" if auto_translate else "켜기"
+            emoji = "⛔" if auto_translate else "✅"
+            return discord.ui.Button(
+                label=label,
+                emoji=emoji,
+                style=discord.ButtonStyle.green if not auto_translate else discord.ButtonStyle.danger,
+                row=0
+            )
 
         @discord.ui.button(emoji="✅", label="켜기", style=discord.ButtonStyle.green, row=0)
         async def toggle_autotranslate(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -134,7 +137,7 @@ class AutoTranslate(commands.Cog):
             # 설정 토글
             self.channel_setting[channel_id]["auto_translate"] = not auto_translate
             await self.parent.save_auto_trans_settings()
-
+            
             # Embed 업데이트
             new_embed = discord.Embed(
                 title=f"🚀 자동번역을 {'종료' if auto_translate else '시작'}합니다!",
