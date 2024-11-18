@@ -141,3 +141,6 @@ class AutoTranslate(commands.Cog):
                 color=discord.Color.blue()
             )
             await interaction.response.edit_message(embed=new_embed, view=self.parent.ViewBackButton(self.parent))
+
+async def setup(bot: commands.Bot):
+    await bot.add_cog(AutoTranslate(bot))
