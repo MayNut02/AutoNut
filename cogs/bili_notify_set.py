@@ -188,7 +188,7 @@ class ViewTranslationSetting(discord.ui.View):
 
     # 번역 설정 상태에 따라 버튼의 라벨 및 스타일 업데이트
     def update_button_label(self, channel_setting, channel_id):
-        if channel_setting[channel_id]["translation"]:
+        if channel_setting.get(channel_id, {}).get('translation', ''):
             self.children[1].label = "번역 비활성화"
             self.children[1].emoji = "⛔"
             self.children[1].style = discord.ButtonStyle.red
@@ -208,7 +208,7 @@ class ViewTranslationSetting(discord.ui.View):
         channel_setting = await load_channel_setting()
         channel_id = str(interaction.channel_id)
 
-        if channel_setting[channel_id]["translation"]:
+        if channel_setting.get(channel_id, {}).get('translation', ''):
             channel_setting[channel_id]["translation"] = False
             await save_channel_setting(channel_setting) 
             new_embed = discord.Embed(
@@ -233,7 +233,7 @@ class ViewMentionSetting(discord.ui.View):
         self.update_button_label(channel_setting, channel_id)
 
     def update_button_label(self, channel_setting, channel_id):
-        if channel_setting[channel_id]["mention"]:
+        if channel_setting.get(channel_id, {}).get('mention', ''):
             self.children[1].label = "역할 수정"
             self.children[1].emoji = "✏️"
         else:
@@ -277,7 +277,7 @@ class ViewMentionSetting(discord.ui.View):
 
             channel_setting = await load_channel_setting()
 
-            if channel_setting[channel_id]["mention"]:
+            if channel_setting.get(channel_id, {}).get('mention', ''):
                 embed_title = "🚀 역할 수정 완료!"
                 embed_description = f"채널에 등록된 역할이 **{channel_setting[channel_id]['mention']}** 에서 **{selected_role_mention}** 로 변경되었습니다."
             else:
@@ -312,7 +312,7 @@ class ViewMentionSetting(discord.ui.View):
         channel_setting = await load_channel_setting()
         channel_id = str(interaction.channel_id)
 
-        if channel_setting[channel_id]["mention"]:
+        if channel_setting.get(channel_id, {}).get('mention', ''):
             old_channel_mention = channel_setting[channel_id]["mention"]
             channel_setting[channel_id]["mention"] = ""
             await save_channel_setting(channel_setting) 
@@ -438,7 +438,7 @@ class ViewBiliNotify(discord.ui.View):
     async def set_mention(self, interaction: discord.Interaction):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
-        channel_mention = channel_setting[channel_id]["mention"]
+        channel_mention = channel_setting.get(channel_id, {}).get('mention', '')
 
         new_embed = discord.Embed(
             title="🔔 멘션 설정",
@@ -454,7 +454,7 @@ class ViewBiliNotify(discord.ui.View):
     async def set_translation(self, interaction: discord.Interaction):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
-        channel_translation = channel_setting[channel_id]["translation"]
+        channel_translation = channel_setting.get(channel_id, {}).get('translation', '')
 
         new_embed = discord.Embed(
             title="🌐 번역 설정",
