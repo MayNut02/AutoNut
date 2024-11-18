@@ -162,7 +162,7 @@ class ViewRemoveAccount(discord.ui.View):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
 
-        if channel_setting[channel_id]["host_mid"]:
+        if channel_setting.get(channel_id, {}).get('host_mid', ''):
             host_mid = channel_setting[channel_id]["host_mid"]
             author_name = await get_author_name(host_mid)
             channel_setting[channel_id]["host_mid"] = ""
@@ -349,7 +349,7 @@ class ViewBiliNotify(discord.ui.View):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
         
-        if channel_setting[channel_id]["host_mid"]:
+        if channel_setting.get(channel_id, {}).get('host_mid', ''):
             modal = AddAccountModal(self.change_account, 0) #수정
         else:
             modal = AddAccountModal(self.change_account, 1) #등록
@@ -375,7 +375,7 @@ class ViewBiliNotify(discord.ui.View):
     async def change_account(self, interaction: discord.Interaction, new_host_mid: str, options: int):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
-        old_host_mid = channel_setting[channel_id]["host_mid"]
+        old_host_mid = channel_setting.get(channel_id, {}).get('host_mid', '')
 
         # watch_list.json에 새로운 UID 추가
         watch_list = await load_watch_list()
@@ -410,7 +410,7 @@ class ViewBiliNotify(discord.ui.View):
     async def remove_account(self, interaction: discord.Interaction):
         channel_id = str(interaction.channel_id)
         channel_setting = await load_channel_setting()
-        host_mid = channel_setting[channel_id]["host_mid"]  # host_mid 가져오기
+        host_mid = channel_setting.get(channel_id, {}).get('host_mid', '')  # host_mid 가져오기
 
         if channel_id in channel_setting:
             if host_mid:
