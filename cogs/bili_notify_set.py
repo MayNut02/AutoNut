@@ -81,19 +81,19 @@ async def send_notice_message(channel, post, host_mid, channel_id, channel_setti
         content=(
             (f"{channel_mention}\n" if channel_mention else "") +
             f"🔔 **{post['author_name']}** 님이 {'동영상' if post.get('original_type') == 'DYNAMIC_TYPE_AV' else '게시물'}을 공유했습니다!\n"
-            f"https://t.bilibili.com/{post['id']}"
+            f"<https://t.bilibili.com/{post['id']}>"
         )
     elif post["type"] == "DYNAMIC_TYPE_ARTICLE":
         content=(
             (f"{channel_mention}\n" if channel_mention else "") +
             f"🔔 **{post['author_name']}** 님의 새로운 기사가 도착했습니다!\n"
-            f"https://www.bilibili.com/opus/{post['id']}"
+            f"<https://www.bilibili.com/opus/{post['id']}>"
         )
     else:
         content=(
             (f"{channel_mention}\n" if channel_mention else "") +
             f"🔔 **{post['author_name']}** 님의 새로운 게시물이 도착했습니다!\n"
-            f"https://www.bilibili.com/opus/{post['id']}"
+            f"<https://www.bilibili.com/opus/{post['id']}>"
         )
 
     try:
