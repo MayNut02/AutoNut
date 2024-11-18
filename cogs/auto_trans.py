@@ -125,6 +125,10 @@ class AutoTranslate(commands.Cog):
         channel_id = str(interaction.channel.id)
         if channel_id not in self.channel_settings:
             self.channel_settings[channel_id] = {"host_mid": "", "mention": "", "translation": False, "auto_translate": False}
+            await self.save_auto_trans_settings()
+        elif 'auto_translate' not in self.channel_settings[channel_id]:
+            self.channel_settings[channel_id]["auto_translate"] = False
+            await self.save_auto_trans_settings()
 
         # Embed 생성
         embed = create_autotrans_setting_embed(
