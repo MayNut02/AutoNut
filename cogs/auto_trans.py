@@ -109,8 +109,9 @@ class AutoTranslate(commands.Cog):
             )
 
     class ViewAutoTransSetting(discord.ui.View):
-        def __init__(self, channel_setting, channel):
+        def __init__(self, parent, channel_setting, channel):
             super().__init__()
+            self.parent = parent
             self.channel = channel  # 채널 정보 추가
             self.channel_setting = channel_setting
             self.update_button_label()
