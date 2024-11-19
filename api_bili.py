@@ -3,8 +3,8 @@ import asyncio
 import json
 import os
 import aiofiles
+from asyncio import Lock
 from dotenv import load_dotenv, set_key
-from datetime import datetime, timezone
 from datetime import datetime, timezone
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -34,9 +34,10 @@ os.makedirs(DATA_DIR, exist_ok=True)   # 데이터 디렉토리 생성
 file_lock = asyncio.Lock()             # 파일 동기화를 위한 Lock
 
 # Selenium을 사용하여 새로운 쿠키 값을 가져오고 .env 파일에 저장
+refresh_lock = Lock()
 is_refreshing = False  # 갱신 중인지 상태를 나타내는 Flag
 async def refresh_cookies():
-    global is_refreshing
+    global refresh_lock, is_refreshing
 
     # 이미 갱신 중이라면 반환
     if is_refreshing:
@@ -44,61 +45,66 @@ async def refresh_cookies():
         await asyncio.sleep(60)
         return
     
-    try:
-        # Flag 설정
-        is_refreshing = True
-        print("[INFO] 쿠키 갱신 시작")
-
-        # 셀레니움 실행
-        chrome_options = Options()
-        chrome_options.add_argument('--headless')  # 필요하면 헤드리스 모드 사용
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--disable-gpu')  # GPU 비활성화 (특히 Linux 시스템에서 필요)
-        chrome_options.add_argument('--disable-infobars')  # 정보 바 제거
-        chrome_options.add_argument('--media-cache-size=104857600')  # 미디어 캐시 제한
-        chromedriver_path = "/usr/local/bin/chromedriver"
-        service = Service(chromedriver_path)
-        env_file_path = ".env"
-
-        # 드라이버 초기화
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-
+    async with refresh_lock:  # Lock 획득
+        if is_refreshing:  # Lock 대기 중 다른 작업이 갱신했다면 반환
+            print("[INFO] 다른 작업에서 쿠키 갱신 완료. 작업 생략.")
+            return
+        
         try:
-            # Bilibili 홈페이지 열기
-            driver.get("https://www.bilibili.com/")
-            driver.implicitly_wait(20)  # 페이지 로딩 대기
+            # Flag 설정
+            is_refreshing = True
+            print("[INFO] 쿠키 갱신 시작")
 
-            # 쿠키 가져오기
-            cookies = driver.get_cookies()
-            buvid3 = None
-            buvid4 = None
+            # 셀레니움 실행
+            chrome_options = Options()
+            chrome_options.add_argument('--headless')  # 필요하면 헤드리스 모드 사용
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--disable-gpu')  # GPU 비활성화 (특히 Linux 시스템에서 필요)
+            chrome_options.add_argument('--disable-infobars')  # 정보 바 제거
+            chrome_options.add_argument('--media-cache-size=104857600')  # 미디어 캐시 제한
+            chromedriver_path = "/usr/local/bin/chromedriver"
+            service = Service(chromedriver_path)
+            env_file_path = ".env"
 
-            for cookie in cookies:
-                if cookie['name'] == 'buvid3':
-                    buvid3 = cookie['value']
-                elif cookie['name'] == 'buvid4':
-                    buvid4 = cookie['value']
+            # 드라이버 초기화
+            driver = webdriver.Chrome(service=service, options=chrome_options)
 
-            # .env 파일에 저장
-            if buvid3 and buvid4:
-                if os.path.exists(env_file_path):
-                    load_dotenv(env_file_path)
-                set_key(env_file_path, "BUVID3", buvid3)
-                set_key(env_file_path, "BUVID4", buvid4)
-                print(f"[INFO] 새 쿠키 저장 완료")
-            else:
-                print("[ERROR] buvid3 또는 buvid4 쿠키를 찾을 수 없습니다.")
+            try:
+                # Bilibili 홈페이지 열기
+                driver.get("https://www.bilibili.com/")
+                driver.implicitly_wait(20)  # 페이지 로딩 대기
 
-        except Exception as e:
-            print(f"[ERROR] 쿠키 갱신 중 오류 발생: {e}")
+                # 쿠키 가져오기
+                cookies = driver.get_cookies()
+                buvid3 = None
+                buvid4 = None
+
+                for cookie in cookies:
+                    if cookie['name'] == 'buvid3':
+                        buvid3 = cookie['value']
+                    elif cookie['name'] == 'buvid4':
+                        buvid4 = cookie['value']
+
+                # .env 파일에 저장
+                if buvid3 and buvid4:
+                    if os.path.exists(env_file_path):
+                        load_dotenv(env_file_path)
+                    set_key(env_file_path, "BUVID3", buvid3)
+                    set_key(env_file_path, "BUVID4", buvid4)
+                    print(f"[INFO] 새 쿠키 저장 완료")
+                else:
+                    print("[ERROR] buvid3 또는 buvid4 쿠키를 찾을 수 없습니다.")
+
+            except Exception as e:
+                print(f"[ERROR] 쿠키 갱신 중 오류 발생: {e}")
+            finally:
+                driver.quit()
+
+            print("[INFO] 쿠키 갱신 완료")
         finally:
-            driver.quit()
-
-        print("[INFO] 쿠키 갱신 완료")
-    finally:
-        # Flag 해제
-        is_refreshing = False
+            # Flag 해제
+            is_refreshing = False
 
 # watch_list.json에서 host_mid 목록을 로드
 async def load_watch_list():
