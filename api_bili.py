@@ -115,6 +115,10 @@ async def fetch_data(host_mid):
         try:
             async with session.get(url, headers=HEADERS) as response:
                 data = await response.json()
+                if data.get("code") != 0:
+                    print("[ERROR] COOKIE - SESSDATA가 만료되었습니다.")
+                    await asyncio.sleep(18000) # 5시간 대기
+                    return  
                 items = data.get("data", {}).get("items", [])[4::-1]
                 return [extract_data_by_type(item) for item in items]
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
@@ -186,6 +190,7 @@ async def pre_rank_data():
                     # "code" 값이 0이 아닌 경우 처리
                     if data.get("code") != 0:
                         print("[ERROR] COOKIE - SESSDATA가 만료되었습니다.")
+                        await asyncio.sleep(18000) # 5시간 대기
                         return  
 
                     base_data = data.get("data", {}).get("order_list", [])[:]
