@@ -25,6 +25,7 @@ class AutoNut(commands.AutoShardedBot):
         await self.load_extension("cogs.bili_pre_rank")
         await self.load_extension("cogs.countdown")
         await self.load_extension("cogs.auto_trans")
+        await self.load_extension("cogs.lounge")
 
         # 명령어 동기화
         await self.tree.sync()

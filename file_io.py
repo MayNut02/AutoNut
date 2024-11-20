@@ -7,8 +7,9 @@ DATA_DIR = 'host_data'  # 데이터 저장 디렉터리
 WATCH_LIST_FILE = 'watch_list.json'  # 감시 목록 파일
 CHANNEL_SETTING_FILE = 'channel_setting.json'  # 채널 설정 파일
 PRE_RANK_FILE = 'pre_rank.json'  # 사전예약 랭킹 데이터 파일
+LOUNGE_FEEDS_FILE = 'lounge_feedS.json'
 
-# 감시 목록 로드
+# 비리비리 감시 목록 로드
 async def load_watch_list():
     try:
         async with aiofiles.open(WATCH_LIST_FILE, 'r', encoding='utf-8') as file:
@@ -17,10 +18,24 @@ async def load_watch_list():
     except FileNotFoundError:
         return []
 
-# 감시 목록 저장
+# 비리비리 감시 목록 저장
 async def save_watch_list(host_mids):
     async with aiofiles.open(WATCH_LIST_FILE, 'w', encoding='utf-8') as file:
         await file.write(json.dumps({"host_mids": host_mids}, indent=4))
+
+# 네이버 라운지 감시 목록 로드
+async def load_feed_data(lounge):
+    try:
+        async with aiofiles.open(LOUNGE_FEEDS_FILE, 'r', encoding='utf-8') as file:
+            watch_list = json.loads(await file.read())
+        return watch_list.get(lounge, [])
+    except FileNotFoundError:
+        return []
+
+# 네이버 라운지 감시 목록 저장
+async def save_feed_data(lounge, feed_ids):
+    async with aiofiles.open(LOUNGE_FEEDS_FILE, 'w', encoding='utf-8') as file:
+        await file.write(json.dumps({lounge: feed_ids}, indent=4))
 
 # 채널 설정 로드
 async def load_channel_setting():
