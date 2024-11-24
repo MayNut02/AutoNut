@@ -90,8 +90,11 @@ def extract_data_by_type(post):
             })
         # 원본이 다른 타입일 경우 텍스트 저장
         else:
+            original_text = orig.get("modules", {}).get("module_dynamic", {}).get("desc", {}).get("text")
+            if original_text is None:
+                original_text = orig.get("modules", {}).get("module_dynamic", {}).get("major", {}).get("article", {}).get("desc", "")
             forward_data.update({
-                "original_text": orig.get("modules", {}).get("module_dynamic", {}).get("desc", {}).get("text", "")
+                "original_text": original_text
             })
         return forward_data
     # 텍스트 게시물 데이터
