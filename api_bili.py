@@ -19,7 +19,6 @@ URL_PRE_RANK_API = "https://le3-api.game.bilibili.com/pc/game/ranking/page_ranki
 HEADERS = {
     "User-Agent": "Mozilla/5.0",
     "Cookie": os.getenv("COOKIE")
-    #"Cookie": f"buvid3={os.getenv('BUVID3')};"
     # "Cookie": (
     #     f"buvid3={os.getenv('BUVID3')}"
     #     f"buvid4={os.getenv('BUVID4')}"
@@ -32,79 +31,6 @@ DATA_DIR = 'host_data'                 # 데이터 저장 디렉토리
 UDS_PATH = "/tmp/monitor_signal.sock"  # UDS 경로
 os.makedirs(DATA_DIR, exist_ok=True)   # 데이터 디렉토리 생성
 file_lock = asyncio.Lock()             # 파일 동기화를 위한 Lock
-
-# # Selenium을 사용하여 새로운 쿠키 값을 가져오고 .env 파일에 저장
-# refresh_lock = Lock()
-# is_refreshing = False  # 갱신 중인지 상태를 나타내는 Flag
-# async def refresh_cookies():
-#     global refresh_lock, is_refreshing
-
-#     # 이미 갱신 중이라면 반환
-#     if is_refreshing:
-#         print("[INFO] 쿠키 갱신이 이미 진행 중입니다.")
-#         await asyncio.sleep(60)
-#         return
-    
-#     async with refresh_lock:  # Lock 획득
-#         if is_refreshing:  # Lock 대기 중 다른 작업이 갱신했다면 반환
-#             print("[INFO] 다른 작업에서 쿠키 갱신 완료. 작업 생략.")
-#             return
-        
-#         try:
-#             # Flag 설정
-#             is_refreshing = True
-#             print("[INFO] 쿠키 갱신 시작")
-
-#             # 셀레니움 실행
-#             chrome_options = Options()
-#             chrome_options.add_argument('--headless')  # 필요하면 헤드리스 모드 사용
-#             chrome_options.add_argument('--no-sandbox')
-#             chrome_options.add_argument('--disable-dev-shm-usage')
-#             chrome_options.add_argument('--disable-gpu')  # GPU 비활성화 (특히 Linux 시스템에서 필요)
-#             chrome_options.add_argument('--disable-infobars')  # 정보 바 제거
-#             chrome_options.add_argument('--media-cache-size=104857600')  # 미디어 캐시 제한
-#             chromedriver_path = "/usr/local/bin/chromedriver"
-#             service = Service(chromedriver_path)
-#             env_file_path = ".env"
-
-#             # 드라이버 초기화
-#             driver = webdriver.Chrome(service=service, options=chrome_options)
-
-#             try:
-#                 # Bilibili 홈페이지 열기
-#                 driver.get("https://www.bilibili.com/")
-#                 driver.implicitly_wait(20)  # 페이지 로딩 대기
-
-#                 # 쿠키 가져오기
-#                 cookies = driver.get_cookies()
-#                 buvid3 = None
-#                 buvid4 = None
-
-#                 for cookie in cookies:
-#                     if cookie['name'] == 'buvid3':
-#                         buvid3 = cookie['value']
-#                     elif cookie['name'] == 'buvid4':
-#                         buvid4 = cookie['value']
-
-#                 # .env 파일에 저장
-#                 if buvid3 and buvid4:
-#                     if os.path.exists(env_file_path):
-#                         load_dotenv(env_file_path)
-#                     set_key(env_file_path, "BUVID3", buvid3)
-#                     set_key(env_file_path, "BUVID4", buvid4)
-#                     print(f"[INFO] 새 쿠키 저장 완료")
-#                 else:
-#                     print("[ERROR] buvid3 또는 buvid4 쿠키를 찾을 수 없습니다.")
-
-#             except Exception as e:
-#                 print(f"[ERROR] 쿠키 갱신 중 오류 발생: {e}")
-#             finally:
-#                 driver.quit()
-
-#             print("[INFO] 쿠키 갱신 완료")
-#         finally:
-#             # Flag 해제
-#             is_refreshing = False
 
 # watch_list.json에서 host_mid 목록을 로드
 async def load_watch_list():
@@ -195,27 +121,32 @@ async def fetch_data(host_mid):
     async with aiohttp.ClientSession(timeout=timeout) as session:
         try:
             async with session.get(url, headers=HEADERS) as response:
+                # 응답 상태 코드 확인
+                if response.status != 200:
+                    print(f"[ERROR] API 응답 오류: {response.status} - host_mid {host_mid}")
+                    await asyncio.sleep(300)
+                    return None
+                
                 data = await response.json()
+                # data가 None인지 확인
+                if data is None:
+                    print(f"[ERROR] API 응답이 None입니다 - host_mid {host_mid}")
+                    await asyncio.sleep(300)
+                    return None
+
                 if data.get("code") != 0:
                     print("[ERROR] COOKIE - SESSDATA가 만료되었습니다.")
-                    await asyncio.sleep(18000) # 5시간 대기
-                    return  
-                
-                # # 쿠키 만료 감지 및 갱신
-                # if data.get("code") != 0:
-                #     print("[ERROR] COOKIE가 만료되었습니다. 쿠키 갱신 중...")
-                #     await refresh_cookies()  # 쿠키 갱신
-                #     # 헤더 재설정
-                #     HEADERS["Cookie"] = (
-                #         f"buvid3={os.getenv('BUVID3')}"
-                #         f"buvid4={os.getenv('BUVID4')}"
-                #     )
-                #     print("[INFO] 쿠키 갱신 완료. 10초 후 API 재시도.")
-                #     await asyncio.sleep(10)  # 대기 후 재시도
-                #     return await fetch_data(host_mid)
-                
-                items = data.get("data", {}).get("items", [])[4::-1]
-                return [extract_data_by_type(item) for item in items]
+                    await asyncio.sleep(18000)
+                    return None
+
+                items = data.get("data", {}).get("items", [])
+                if not items:  # items가 비어있거나 None인 경우
+                    print(f"[WARNING] items가 비어있습니다 - host_mid {host_mid}")
+                    return None
+
+                # 인덱싱 전에 길이 확인
+                items_to_process = items[:5] if len(items) >= 5 else items
+                return [extract_data_by_type(item) for item in reversed(items_to_process)]
         except (aiohttp.ClientError, asyncio.TimeoutError) as e:
             print(f"[ERROR] API 요청 오류: {e} - host_mid {host_mid} 5분 후 재시도")
             await asyncio.sleep(300)           # 오류 발생 시 5분 대기
@@ -280,37 +211,36 @@ async def pre_rank_data():
         async with aiohttp.ClientSession(timeout=timeout) as session:
             try:
                 async with session.get(url, headers=HEADERS) as response:
+                    if response.status != 200:
+                        print(f"[ERROR] 사전예약 API 응답 오류: {response.status}")
+                        return
+
                     data = await response.json()
+                    if data is None:
+                        print("[ERROR] 사전예약 API 응답이 None입니다")
+                        return
 
                     if data.get("code") != 0:
                         print("[ERROR] COOKIE - SESSDATA가 만료되었습니다.")
-                        await asyncio.sleep(18000) # 5시간 대기
-                        return  
+                        await asyncio.sleep(18000)
+                        return
 
-                    # # 쿠키 만료 감지 및 갱신
-                    # if data.get("code") != 0:
-                    #     print("[ERROR] COOKIE가 만료되었습니다. 쿠키 갱신 중...")
-                    #     await refresh_cookies()  # 쿠키 갱신
-                    #     # 헤더 재설정
-                    #     HEADERS["Cookie"] = (
-                    #         f"buvid3={os.getenv('BUVID3')}"
-                    #         f"buvid4={os.getenv('BUVID4')}"
-                    #     )
-                    #     print("[INFO] 쿠키 갱신 완료. 10초 후 API 재시도.")
-                    #     await asyncio.sleep(10)  # 대기 후 재시도
-                    #     return await pre_rank_data()
+                    order_list = data.get("data", {}).get("order_list", [])
+                    if not order_list:
+                        print("[WARNING] order_list가 비어있습니다")
+                        return
 
-                    base_data = data.get("data", {}).get("order_list", [])[:]
-                    for item in base_data:
+                    for item in order_list:
+                        if item is None:
+                            continue
+                        
                         items = {
                             "title": item.get("title", ""),
                             "game_detail_link": item.get("game_detail_link", ""),
                             "icon": item.get("icon", ""),
-                            "game_desc": item.get("game_desc", "")[:60],
-                            "category": item.get("category", {}).get("name",""),
-                            "tag_names": item.get("tag_names", [])[:],
-                            #"developer_name": item.get("developer_name", ""),
-                            #"video_cover_image": item.get("video_cover_image", "")
+                            "game_desc": (item.get("game_desc", "") or "")[:60],
+                            "category": item.get("category", {}).get("name", ""),
+                            "tag_names": item.get("tag_names", [])
                         }
                         new_pre_rank_data.append(items)
 
