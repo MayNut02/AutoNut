@@ -88,13 +88,15 @@ def extract_data_by_type(post):
                 "original_video_link": major.get("archive", {}).get("jump_url", ""),
                 "original_title": major.get("archive", {}).get("title", ""),
             })
+        # 원본이 게시물 타입일 경우 텍스트 저장
+        elif original_type == "DYNAMIC_TYPE_ARTICLE":
+            forward_data.update({
+                "original_text": orig.get("modules", {}).get("module_dynamic", {}).get("major", {}).get("article", {}).get("desc", "")
+            })
         # 원본이 다른 타입일 경우 텍스트 저장
         else:
-            original_text = orig.get("modules", {}).get("module_dynamic", {}).get("desc", {}).get("text")
-            if original_text is None:
-                original_text = orig.get("modules", {}).get("module_dynamic", {}).get("major", {}).get("article", {}).get("desc", "")
             forward_data.update({
-                "original_text": original_text
+                "original_text": orig.get("modules", {}).get("module_dynamic", {}).get("desc", {}).get("text", "")
             })
         return forward_data
     # 텍스트 게시물 데이터
