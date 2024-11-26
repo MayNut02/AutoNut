@@ -3,12 +3,8 @@ import asyncio
 import json
 import os
 import aiofiles
-# from asyncio import Lock
-from dotenv import load_dotenv, set_key
+from dotenv import load_dotenv
 from datetime import datetime, timezone
-# from selenium import webdriver
-# from selenium.webdriver.chrome.service import Service
-# from selenium.webdriver.chrome.options import Options
 
 # 환경 변수 로드
 load_dotenv()
