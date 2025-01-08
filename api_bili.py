@@ -10,7 +10,9 @@ from datetime import datetime, timezone
 load_dotenv()
 
 # API URL 및 헤더 설정
-URL_TEMPLATE = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={}"
+# URL_TEMPLATE = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/space?offset=&host_mid={}"
+URL_TEMPLATE = "https://api.bilibili.com/x/polymer/web-dynamic/v1/feed/all?type=all&host_mid={}"
+# "https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/get_dynamic_detail?dynamic_id=1004467059576274950" 게시물 미리보기
 URL_PRE_RANK_API = "https://le3-api.game.bilibili.com/pc/game/ranking/page_ranking_list?ranking_type=5&page_num={}&page_size=20"
 HEADERS = {
     "User-Agent": "Mozilla/5.0",
@@ -137,8 +139,8 @@ async def fetch_data(host_mid):
 
                 if data.get("code") != 0:
                     print("[ERROR] COOKIE - SESSDATA가 만료되었습니다.")
-                    await asyncio.sleep(18000)
-                    return None
+                    await send_error_to_bot("SESSDATA 만료")
+                    raise SystemExit("[INFO] 프로그램을 종료합니다")
 
                 items = data.get("data", {}).get("items", [])
                 if not items:  # items가 비어있거나 None인 경우
@@ -193,6 +195,23 @@ async def send_signal_to_bot(host_mid, post_id):
             reader, writer = await asyncio.open_unix_connection(UDS_PATH)
             try:
                 message = f'update:{host_mid}:{post_id}'
+                writer.write(message.encode())
+                await writer.drain()
+            finally:
+                writer.close()
+                await writer.wait_closed()
+        else:
+            print("[ERROR] UDS_PATH가 존재하지 않습니다.")
+    except Exception as e:
+        print(f"[ERROR] UDS 통신 오류: {e}")
+
+# UDS를 통해 Discord 봇에 에러 신호를 전송
+async def send_error_to_bot(error_type):
+    try:
+        if os.path.exists(UDS_PATH):
+            reader, writer = await asyncio.open_unix_connection(UDS_PATH)
+            try:
+                message = f'error:{error_type}'
                 writer.write(message.encode())
                 await writer.drain()
             finally:

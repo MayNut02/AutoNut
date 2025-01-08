@@ -492,6 +492,7 @@ class AddAccountModal(Modal, title='비리비리 UID 입력'):
 class BiliNotifySetting(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.admin_channel_id = 1326351602189078528
 
     @app_commands.command(name="알림설정")
     async def set_bili_notify(self, interaction: discord.Interaction):
@@ -562,6 +563,9 @@ class BiliNotifySetting(commands.Cog):
             if message.startswith('update:'):
                 _, host_mid, post_id = message.split(':')
                 await self.check_discord_channel(host_mid, post_id)
+            elif message.startwith('error:'):
+                _, error_type = message.split(':')
+                await self.check_error(error_type)
         except Exception as e:
             print(f"[ERROR] 신호 처리 중 오류 발생: {e}")
         finally:
@@ -604,6 +608,20 @@ class BiliNotifySetting(commands.Cog):
 
         except Exception as e:
             print(f"[ERROR] {host_mid}의 채널 메시지 전송 중 오류 발생: {e}")
+
+    # 에러 발생시 관리용 채널에 메시지 전송
+    async def check_error(self, error_type):
+        try:
+            channel = self.bot.get_channel(self.admin_channel_id)
+            if channel is None:
+                print(f"[ERROR] 유효하지 않은 채널 ID: {self.admin_channel_id}")
+                return
+            
+            # 에러 메시지 생성 및 전송
+            error_message = f"<@&1211254200365748224>\n[ERROR] {error_type}"
+            await channel.send(error_message)
+        except Exception as e:
+            print(f"[ERROR] 에러 메시지 전송 중 오류 발생: {e}")
 
 async def setup(bot):
     bili_notify = BiliNotifySetting(bot)
